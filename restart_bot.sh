@@ -1,17 +1,19 @@
 #!/bin/bash
 
-echo "🔍 Закриваю процеси на портах 10000 і 5000..."
+echo "🔍 Закриваю порти..."
 fuser -k 10000/tcp 2>/dev/null
 fuser -k 5000/tcp 2>/dev/null
 
-echo "🔍 Вбиваю Python процеси Flask, якщо зависли..."
+echo "🔍 Вбиваю Flask та ngrok..."
 pkill -f "main.py" 2>/dev/null
 pkill -f flask 2>/dev/null
-
-echo "🌐 Перезапускаю ngrok..."
 pkill -f ngrok 2>/dev/null
-nohup ./ngrok http 10000 > /dev/null 2>&1 &
+
+echo "🌐 Запускаю ngrok..."
+nohup ./ngrok http 10000 --log=stdout > /tmp/ngrok.log 2>&1 &
+
+sleep 3
 
 echo "🚀 Запускаю Flask..."
-python3 main.py
+nohup python3 main.py > /tmp/bot.log 2>&1 &
 
