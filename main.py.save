@@ -1,0 +1,58 @@
+import os
+import logging
+from flask import Flask, request, Response
+from dotenv import load_dotenv
+import telebot
+from openai import OpenAI
+
+# === Завантаження .env ===
+load_dotenv()
+
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+SERVER_DOMAIN = os.getenv("SERVER_DOMAIN")
+
+# === Ініціалізація ===
+bot = telebot.TeleBot(TELEGRAM_TOKEN)
+app = Flask(__name__)
+gpt = OpenAI(api_key=OPENAI_API_KEY)
+
+# === /ask команда ===
+@bot.message_handler(commands=["ask"])
+def ask_handler(message):
+    prompt = message.text.replace("/ask", "").strip()
+    if not prompt:
+        bot.send_message(message.chat.id, "❗ Напиши щось після /ask")
+        return
+    try:
+        response = gpt.chat.completions.create(
+            model="gpt-4",
+            messages=[{"role": "user", "content": prompt}]
+        )
+        reply = response.choices[0].message.content
+        bot.send_message(message.chat.id, reply)
+    except Exception as e:
+        bot.send_message(message.chat.id, f"⚠️ Помилка GPT: {e}")
+
+@app.route("/webhook", methods=["POST"])
+def telegram_webhook():
+    try:
+        json_string = request.get_data().decode('utf-8')
+        print("📩 Отримано JSON:", json_string)  # Для відлагодження
+        update = telebot.types.Update.de_json(json_string)
+        bot.process_new_updates([update])
+    except Exception as e:
+        print("❌ Error in /webhook handler:", e)
+        return "Webhook error", 500
+    return "OK", 200
+
+
+
+@app.route("/health", methods=["GET"])
+def health_check():
+    return "✅ Alive", 200
+
+if __name__ == "__main__":
+    bot.remove_webhook()
+    app.run(host="0.0.0.0", port=10000)
+

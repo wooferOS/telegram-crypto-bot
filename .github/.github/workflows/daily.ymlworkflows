@@ -1,0 +1,32 @@
+name: Daily Crypto Analysis
+
+on:
+  schedule:
+    - cron: '0 7 * * *'  # Щодня о 10:00 за Києвом (7:00 UTC)
+  workflow_dispatch:      # Можна вручну запускати через GitHub
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.11
+
+    - name: Install dependencies
+      run: |
+        pip install -r telegram-crypto-bot/requirements.txt
+
+    - name: Run daily analysis
+      env:
+        TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+        ADMIN_CHAT_ID: ${{ secrets.ADMIN_CHAT_ID }}
+        BINANCE_API_KEY: ${{ secrets.BINANCE_API_KEY }}
+        BINANCE_API_SECRET: ${{ secrets.BINANCE_API_SECRET }}
+      run: |
+        python telegram-crypto-bot/daily_analysis.py
