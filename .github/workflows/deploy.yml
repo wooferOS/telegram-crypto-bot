@@ -1,4 +1,4 @@
-name: Deploy to Droplet
+name: 🚀 Deploy to Server (main)
 
 on:
   push:
@@ -7,16 +7,23 @@ on:
 
 jobs:
   deploy:
+    name: 🔁 SSH Deploy
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: 📥 Checkout repo
         uses: actions/checkout@v3
 
-      - name: Set up SSH
-        run: |
-          echo "${{ secrets.DROPLET_SSH_KEY }}" > key.pem
-          chmod 600 key.pem
+      - name: 🛡️ Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Deploy to Droplet
+      - name: 🚀 Deploy via SSH
         run: |
-          ssh -o StrictHostKeyChecking=no -i key.pem root@188.166.27.248 "echo '✅ Підключення успішне!' && uptime"
+          ssh -o StrictHostKeyChecking=no root@188.166.27.248 << 'EOF'
+            cd /root/crypto-profit-bot/telegram-crypto-bot
+            git pull origin main
+            systemctl restart crypto-bot.service
+          EOF
+
